@@ -1,5 +1,6 @@
 import { Search, Bell, ShieldAlert } from "lucide-react";
 import { Link } from "wouter";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Header() {
   return (
@@ -14,13 +15,15 @@ export default function Header() {
           />
         </div>
       </div>
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-sm">
+      <div className="flex items-center gap-4 md:gap-6">
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
           <span className="text-[10px] font-mono text-primary uppercase tracking-wider font-bold">System Nominal</span>
         </div>
+
+        <ThemeToggle />
         
-        <div className="flex items-center gap-1 border-l border-border pl-6">
+        <div className="flex items-center gap-1 border-l border-border pl-4 md:pl-6">
           <Link href="/assurance" className="relative p-2 text-muted-foreground hover:text-accent transition-colors">
             <ShieldAlert className="w-5 h-5" />
           </Link>

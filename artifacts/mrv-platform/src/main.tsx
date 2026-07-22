@@ -1,7 +1,14 @@
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import './index.css';
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import { installMockApi, isMockApiEnabled } from "./lib/mock-api";
 
-document.documentElement.classList.add('dark');
+if (isMockApiEnabled()) {
+  installMockApi();
+}
 
-createRoot(document.getElementById('root')!).render(<App />);
+// Default light theme; ThemeProvider may switch to dark
+document.documentElement.classList.remove("dark");
+document.documentElement.classList.add("light");
+
+createRoot(document.getElementById("root")!).render(<App />);

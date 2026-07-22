@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, List, Beaker, ClipboardCheck, ShieldCheck, Scale, FileBarChart, MapPin, Bell, Hexagon } from "lucide-react";
+import { LayoutDashboard, List, Beaker, ClipboardCheck, ShieldCheck, Scale, FileBarChart, MapPin, Bell, Hexagon, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const mainNav = [
   { name: "Executive Dashboard", href: "/", icon: LayoutDashboard },
@@ -23,11 +24,19 @@ const secondaryNav = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user, logOut } = useAuth();
 
   const isCurrent = (href: string) => {
     if (href === "/") return location === "/";
     return location.startsWith(href);
   };
+
+  const initials = (user?.name || "U")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="w-64 flex-shrink-0 border-r border-border bg-sidebar h-full flex flex-col relative z-30">
@@ -102,16 +111,24 @@ export default function Sidebar() {
         </div>
       </div>
       
-      <div className="p-4 border-t border-border bg-sidebar/50">
+      <div className="p-4 border-t border-border bg-sidebar/50 space-y-3">
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-mono text-xs border border-border text-foreground">
-            CO
+            {initials}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">Officer Terminal</span>
-            <span className="text-[10px] font-mono text-primary">ID: 8492-AC</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-foreground truncate">{user?.name || "User"}</span>
+            <span className="text-[10px] font-mono text-primary truncate">{user?.email}</span>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => void logOut()}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <LogOut className="w-4 h-4" />
+          Log out
+        </button>
       </div>
     </div>
   );

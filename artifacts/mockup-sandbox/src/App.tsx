@@ -1,6 +1,14 @@
 import { useEffect, useState, type ComponentType } from "react";
 
 import { modules as discoveredModules } from "./.generated/mockup-components";
+import Auth from "./components/mockups/Auth";
+import Home from "./components/mockups/Home";
+import {
+  getSession,
+  logOut,
+  onAuthChange,
+  type PublicUser,
+} from "./lib/auth-db";
 
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 
@@ -76,7 +84,7 @@ function PreviewRenderer({
 
   if (error) {
     return (
-      <pre style={{ color: "red", padding: "2rem", fontFamily: "system-ui" }}>
+      <pre style={{ color: "red", padding: "2rem", fontFamily: "Geist, sans-serif" }}>
         {error}
       </pre>
     );
@@ -91,30 +99,52 @@ function getBasePath(): string {
   return import.meta.env.BASE_URL.replace(/\/$/, "");
 }
 
-function getPreviewExamplePath(): string {
-  const basePath = getBasePath();
-  return `${basePath}/preview/ComponentName`;
-}
+function AppShell() {
+  const [user, setUser] = useState<PublicUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
-function Gallery() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-3">
-          Component Preview Server
-        </h1>
-        <p className="text-gray-500 mb-4">
-          This server renders individual components for the workspace canvas.
-        </p>
-        <p className="text-sm text-gray-400">
-          Access component previews at{" "}
-          <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-            {getPreviewExamplePath()}
-          </code>
-        </p>
+  useEffect(() => {
+    let active = true;
+
+    void getSession().then((sessionUser) => {
+      if (!active) return;
+      setUser(sessionUser);
+      setLoading(false);
+    });
+
+    const { data } = onAuthChange((next) => {
+      if (!active) return;
+      setUser(next);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f3f5f1] font-sans text-[#5f735c]">
+        Loading…
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (user) {
+    return (
+      <Home
+        user={user}
+        onLogout={async () => {
+          await logOut();
+          setUser(null);
+        }}
+      />
+    );
+  }
+
+  return <Auth onAuthenticated={setUser} />;
 }
 
 function getPreviewPath(): string | null {
@@ -140,7 +170,7 @@ function App() {
     );
   }
 
-  return <Gallery />;
+  return <AppShell />;
 }
 
 export default App;

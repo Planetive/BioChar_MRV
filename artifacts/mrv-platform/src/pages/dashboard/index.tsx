@@ -12,13 +12,18 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { format } from "date-fns";
 
 export default function Dashboard() {
-  const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
+  const { data: summary, isLoading: loadingSummary, isError: summaryError } = useGetDashboardSummary();
   const { data: pipeline, isLoading: loadingPipeline } = useGetPipelineSummary();
   const { data: activity, isLoading: loadingActivity } = useGetRecentActivity({ limit: 5 });
   const { data: comparison, isLoading: loadingComparison } = useGetRegistryComparison();
   const { data: health, isLoading: loadingHealth } = useGetComplianceHealth();
 
-  if (loadingSummary || !summary) {
+  const summaryReady =
+    summary &&
+    typeof summary === "object" &&
+    typeof (summary as { totalNetCo2e?: unknown }).totalNetCo2e === "number";
+
+  if (loadingSummary || (!summaryReady && !summaryError)) {
     return (
       <PageContainer title="Executive Dashboard">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -27,6 +32,23 @@ export default function Dashboard() {
       </PageContainer>
     );
   }
+
+  if (summaryError || !summaryReady) {
+    return (
+      <PageContainer title="Executive Dashboard" description="System-wide aggregate carbon metrics and compliance standing">
+        <div className="rounded-sm border border-destructive/30 bg-card p-6 text-sm text-muted-foreground">
+          Could not load dashboard data. If mock mode is off, start the API server or set{" "}
+          <code className="font-mono text-foreground">VITE_USE_MOCK_API=true</code>.
+        </div>
+      </PageContainer>
+    );
+  }
+
+  const totalNetCo2e = summary.totalNetCo2e ?? 0;
+  const totalRevenueUsd = summary.totalRevenueUsd ?? 0;
+  const totalSites = summary.totalSites ?? 0;
+  const activeBatches = summary.activeBatches ?? summary.totalBatches ?? 0;
+  const criticalIssues = summary.criticalIssues ?? summary.openIssues ?? 0;
 
   const pipelineData = pipeline ? [
     { name: 'Collect', value: pipeline.collect, color: 'hsl(var(--muted))' },
@@ -48,7 +70,7 @@ export default function Dashboard() {
             <Database className="w-4 h-4 text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-bold font-mono tracking-tight">{summary.totalNetCo2e.toLocaleString()}</span>
+            <span className="text-3xl font-bold font-mono tracking-tight">{totalNetCo2e.toLocaleString()}</span>
             <span className="text-xs text-muted-foreground ml-2">tonnes</span>
           </div>
         </div>
@@ -59,7 +81,7 @@ export default function Dashboard() {
             <DollarSign className="w-4 h-4 text-accent opacity-50 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-bold font-mono tracking-tight text-accent">${summary.totalRevenueUsd.toLocaleString()}</span>
+            <span className="text-3xl font-bold font-mono tracking-tight text-accent">${totalRevenueUsd.toLocaleString()}</span>
           </div>
         </div>
 
@@ -69,8 +91,8 @@ export default function Dashboard() {
             <Activity className="w-4 h-4 text-primary opacity-50 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-bold font-mono tracking-tight">{summary.activeBatches || summary.totalBatches}</span>
-            <span className="text-xs text-muted-foreground ml-2">across {summary.totalSites} sites</span>
+            <span className="text-3xl font-bold font-mono tracking-tight">{activeBatches}</span>
+            <span className="text-xs text-muted-foreground ml-2">across {totalSites} sites</span>
           </div>
         </div>
 
@@ -80,7 +102,7 @@ export default function Dashboard() {
             <AlertTriangle className="w-4 h-4 text-destructive opacity-50 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-bold font-mono tracking-tight text-destructive">{summary.criticalIssues || summary.openIssues}</span>
+            <span className="text-3xl font-bold font-mono tracking-tight text-destructive">{criticalIssues}</span>
             <span className="text-xs text-muted-foreground ml-2">require attention</span>
           </div>
         </div>
