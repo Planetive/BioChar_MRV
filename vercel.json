@@ -1,8 +1,8 @@
 {
+  "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @workspace/mrv-platform run build",
-  "outputDirectory": "artifacts/mrv-platform/dist/public",
-  "framework": "vite",
+  "buildCommand": "pnpm --filter @workspace/mrv-platform run build && node -e \"const fs=require('fs'); fs.rmSync('public',{recursive:true,force:true}); fs.cpSync('artifacts/mrv-platform/dist/public','public',{recursive:true})\"",
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/((?!assets/).*)",
