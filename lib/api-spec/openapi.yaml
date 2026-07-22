@@ -3,20 +3,46 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Biochar Digital MRV Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sites
+    description: Site management
+  - name: batches
+    description: Biochar production batches
+  - name: feedstock
+    description: Feedstock intake entries
+  - name: production
+    description: Production records
+  - name: labcerts
+    description: Lab certificates
+  - name: custody
+    description: Chain of custody
+  - name: model-runs
+    description: Carbon quantification model runs
+  - name: assurance
+    description: Assurance issues and validation
+  - name: audit
+    description: Audit events and trail
+  - name: compliance
+    description: Compliance calendar and deadlines
+  - name: allocations
+    description: Credit allocations and registry reporting
+  - name: notifications
+    description: Platform notifications
+  - name: dashboard
+    description: Dashboard and analytics endpoints
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +50,1338 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── SITES ────────────────────────────────────────────────────────────────
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List all sites
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Site"
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Create a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+
+  /sites/{id}:
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: Get a site
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSite
+      tags: [sites]
+      summary: Update a site
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Site"
+
+  # ── BATCHES ──────────────────────────────────────────────────────────────
+  /batches:
+    get:
+      operationId: listBatches
+      tags: [batches]
+      summary: List all batches
+      parameters:
+        - { name: siteId, in: query, schema: { type: integer } }
+        - { name: stage, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Batch"
+    post:
+      operationId: createBatch
+      tags: [batches]
+      summary: Create a batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+
+  /batches/{id}:
+    get:
+      operationId: getBatch
+      tags: [batches]
+      summary: Get a batch
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateBatch
+      tags: [batches]
+      summary: Update a batch
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+
+  /batches/{id}/advance-stage:
+    post:
+      operationId: advanceBatchStage
+      tags: [batches]
+      summary: Advance batch to next MRV stage
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+
+  # ── FEEDSTOCK ─────────────────────────────────────────────────────────────
+  /feedstock-entries:
+    get:
+      operationId: listFeedstockEntries
+      tags: [feedstock]
+      summary: List feedstock entries
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+        - { name: siteId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeedstockEntry"
+    post:
+      operationId: createFeedstockEntry
+      tags: [feedstock]
+      summary: Create a feedstock entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedstockEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedstockEntry"
+
+  /feedstock-entries/{id}:
+    patch:
+      operationId: updateFeedstockEntry
+      tags: [feedstock]
+      summary: Update a feedstock entry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedstockEntryUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedstockEntry"
+    delete:
+      operationId: deleteFeedstockEntry
+      tags: [feedstock]
+      summary: Delete a feedstock entry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204":
+          description: Deleted
+
+  # ── PRODUCTION RECORDS ────────────────────────────────────────────────────
+  /production-records:
+    get:
+      operationId: listProductionRecords
+      tags: [production]
+      summary: List production records
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+        - { name: siteId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductionRecord"
+    post:
+      operationId: createProductionRecord
+      tags: [production]
+      summary: Create a production record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductionRecordInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionRecord"
+
+  /production-records/{id}:
+    patch:
+      operationId: updateProductionRecord
+      tags: [production]
+      summary: Update a production record
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductionRecordUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionRecord"
+
+  # ── LAB CERTIFICATES ──────────────────────────────────────────────────────
+  /lab-certificates:
+    get:
+      operationId: listLabCertificates
+      tags: [labcerts]
+      summary: List lab certificates
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabCertificate"
+    post:
+      operationId: createLabCertificate
+      tags: [labcerts]
+      summary: Ingest a lab certificate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabCertificateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabCertificate"
+
+  /lab-certificates/{id}:
+    patch:
+      operationId: updateLabCertificate
+      tags: [labcerts]
+      summary: Update a lab certificate
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabCertificateUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabCertificate"
+
+  # ── CHAIN OF CUSTODY ──────────────────────────────────────────────────────
+  /custody-records:
+    get:
+      operationId: listCustodyRecords
+      tags: [custody]
+      summary: List chain-of-custody records
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustodyRecord"
+    post:
+      operationId: createCustodyRecord
+      tags: [custody]
+      summary: Create a custody record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustodyRecordInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustodyRecord"
+
+  /custody-records/{id}:
+    patch:
+      operationId: updateCustodyRecord
+      tags: [custody]
+      summary: Update a custody record
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustodyRecordUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustodyRecord"
+
+  # ── MODEL RUNS ────────────────────────────────────────────────────────────
+  /model-runs:
+    get:
+      operationId: listModelRuns
+      tags: [model-runs]
+      summary: List model runs
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModelRun"
+    post:
+      operationId: createModelRun
+      tags: [model-runs]
+      summary: Run carbon quantification model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelRunInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelRun"
+
+  /model-runs/{id}:
+    get:
+      operationId: getModelRun
+      tags: [model-runs]
+      summary: Get a model run
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelRun"
+        "404":
+          description: Not found
+
+  # ── ASSURANCE ISSUES ─────────────────────────────────────────────────────
+  /assurance-issues:
+    get:
+      operationId: listAssuranceIssues
+      tags: [assurance]
+      summary: List assurance issues
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+        - { name: siteId, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: severity, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssuranceIssue"
+    post:
+      operationId: createAssuranceIssue
+      tags: [assurance]
+      summary: Create an assurance issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssuranceIssueInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssuranceIssue"
+
+  /assurance-issues/{id}:
+    patch:
+      operationId: updateAssuranceIssue
+      tags: [assurance]
+      summary: Update an assurance issue
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssuranceIssueUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssuranceIssue"
+
+  /assurance-issues/{id}/resolve:
+    post:
+      operationId: resolveAssuranceIssue
+      tags: [assurance]
+      summary: Resolve an assurance issue
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueResolution"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssuranceIssue"
+
+  # ── AUDIT EVENTS ──────────────────────────────────────────────────────────
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+      tags: [audit]
+      summary: List audit events (immutable trail)
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+        - { name: siteId, in: query, schema: { type: integer } }
+        - { name: entityType, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEvent"
+
+  /audit-events/batch/{batchId}:
+    get:
+      operationId: getBatchAuditTrail
+      tags: [audit]
+      summary: Get complete audit trail for a batch
+      parameters:
+        - { name: batchId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEvent"
+
+  # ── COMPLIANCE ────────────────────────────────────────────────────────────
+  /compliance-deadlines:
+    get:
+      operationId: listComplianceDeadlines
+      tags: [compliance]
+      summary: List compliance deadlines
+      parameters:
+        - { name: siteId, in: query, schema: { type: integer } }
+        - { name: registry, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComplianceDeadline"
+    post:
+      operationId: createComplianceDeadline
+      tags: [compliance]
+      summary: Create a compliance deadline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplianceDeadlineInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceDeadline"
+
+  /compliance-deadlines/{id}:
+    patch:
+      operationId: updateComplianceDeadline
+      tags: [compliance]
+      summary: Update a compliance deadline
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ComplianceDeadlineUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceDeadline"
+
+  # ── CREDIT ALLOCATIONS ────────────────────────────────────────────────────
+  /credit-allocations:
+    get:
+      operationId: listCreditAllocations
+      tags: [allocations]
+      summary: List credit allocations
+      parameters:
+        - { name: batchId, in: query, schema: { type: integer } }
+        - { name: siteId, in: query, schema: { type: integer } }
+        - { name: registry, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditAllocation"
+    post:
+      operationId: createCreditAllocation
+      tags: [allocations]
+      summary: Allocate credits to a registry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditAllocationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditAllocation"
+
+  /credit-allocations/{id}:
+    get:
+      operationId: getCreditAllocation
+      tags: [allocations]
+      summary: Get a credit allocation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditAllocation"
+
+  # ── NOTIFICATIONS ─────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      parameters:
+        - { name: unreadOnly, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "204":
+          description: Done
+
+  # ── DASHBOARD / ANALYTICS (wow endpoints) ─────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Executive dashboard summary — credit values, site health, compliance status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/pipeline:
+    get:
+      operationId: getPipelineSummary
+      tags: [dashboard]
+      summary: Batch count breakdown by MRV stage
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent activity feed across all entities
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/registry-comparison:
+    get:
+      operationId: getRegistryComparison
+      tags: [dashboard]
+      summary: Compare credit value across Puro.earth, Verra, EBC for eligible batches
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryComparison"
+
+  /dashboard/compliance-health:
+    get:
+      operationId: getComplianceHealth
+      tags: [dashboard]
+      summary: Compliance health — upcoming deadlines and conflict warnings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComplianceHealth"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── SITE ────────────────────────────────────────────────────────────────
+    Site:
+      type: object
+      required: [id, name, location, status, createdAt]
+      properties:
+        id:       { type: integer }
+        name:     { type: string }
+        location: { type: string }
+        country:  { type: ["string", "null"] }
+        status:   { type: string, enum: [active, inactive, pending] }
+        timezone: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    SiteInput:
+      type: object
+      required: [name, location]
+      properties:
+        name:     { type: string, minLength: 1 }
+        location: { type: string }
+        country:  { type: string }
+        status:   { type: string, enum: [active, inactive, pending] }
+        timezone: { type: string }
+
+    SiteUpdate:
+      type: object
+      properties:
+        name:     { type: string }
+        location: { type: string }
+        country:  { type: string }
+        status:   { type: string, enum: [active, inactive, pending] }
+        timezone: { type: string }
+
+    # ── BATCH ────────────────────────────────────────────────────────────────
+    Batch:
+      type: object
+      required: [id, siteId, batchCode, stage, status, createdAt]
+      properties:
+        id:          { type: integer }
+        siteId:      { type: integer }
+        batchCode:   { type: string }
+        description: { type: ["string", "null"] }
+        stage:
+          type: string
+          enum: [collect, quantify, assurance, verify, comply, report]
+        status:
+          type: string
+          enum: [in_progress, blocked, completed, verified, allocated]
+        productionDate:      { type: ["string", "null"], format: date }
+        totalBiomassKg:      { type: ["number", "null"] }
+        totalBiocharKg:      { type: ["number", "null"] }
+        estimatedCo2e:       { type: ["number", "null"] }
+        permanenceDiscount:  { type: ["number", "null"] }
+        netCo2e:             { type: ["number", "null"] }
+        assignedTo:          { type: ["string", "null"] }
+        createdAt:           { type: string, format: date-time }
+        updatedAt:           { type: string, format: date-time }
+
+    BatchInput:
+      type: object
+      required: [siteId, batchCode]
+      properties:
+        siteId:         { type: integer }
+        batchCode:      { type: string, minLength: 1 }
+        description:    { type: string }
+        productionDate: { type: string, format: date }
+        assignedTo:     { type: string }
+
+    BatchUpdate:
+      type: object
+      properties:
+        batchCode:      { type: string }
+        description:    { type: string }
+        stage:          { type: string, enum: [collect, quantify, assurance, verify, comply, report] }
+        status:         { type: string, enum: [in_progress, blocked, completed, verified, allocated] }
+        productionDate: { type: string, format: date }
+        assignedTo:     { type: string }
+
+    # ── FEEDSTOCK ENTRY ──────────────────────────────────────────────────────
+    FeedstockEntry:
+      type: object
+      required: [id, batchId, biomassSource, biomassType, quantityKg, createdAt]
+      properties:
+        id:              { type: integer }
+        batchId:         { type: integer }
+        biomassSource:   { type: string }
+        biomassType:     { type: string }
+        quantityKg:      { type: number }
+        moisturePercent: { type: ["number", "null"] }
+        supplier:        { type: ["string", "null"] }
+        collectionDate:  { type: ["string", "null"], format: date }
+        notes:           { type: ["string", "null"] }
+        createdAt:       { type: string, format: date-time }
+
+    FeedstockEntryInput:
+      type: object
+      required: [batchId, biomassSource, biomassType, quantityKg]
+      properties:
+        batchId:         { type: integer }
+        biomassSource:   { type: string }
+        biomassType:     { type: string }
+        quantityKg:      { type: number }
+        moisturePercent: { type: number }
+        supplier:        { type: string }
+        collectionDate:  { type: string, format: date }
+        notes:           { type: string }
+
+    FeedstockEntryUpdate:
+      type: object
+      properties:
+        biomassSource:   { type: string }
+        biomassType:     { type: string }
+        quantityKg:      { type: number }
+        moisturePercent: { type: number }
+        supplier:        { type: string }
+        collectionDate:  { type: string, format: date }
+        notes:           { type: string }
+
+    # ── PRODUCTION RECORD ─────────────────────────────────────────────────────
+    ProductionRecord:
+      type: object
+      required: [id, batchId, pyrolysisTemp, residenceTimeMin, createdAt]
+      properties:
+        id:                  { type: integer }
+        batchId:             { type: integer }
+        pyrolysisTemp:       { type: number }
+        residenceTimeMin:    { type: number }
+        feedrateKgH:         { type: ["number", "null"] }
+        outputBiocharKg:     { type: ["number", "null"] }
+        processingDate:      { type: ["string", "null"], format: date }
+        operatorNotes:       { type: ["string", "null"] }
+        equipmentId:         { type: ["string", "null"] }
+        createdAt:           { type: string, format: date-time }
+
+    ProductionRecordInput:
+      type: object
+      required: [batchId, pyrolysisTemp, residenceTimeMin]
+      properties:
+        batchId:          { type: integer }
+        pyrolysisTemp:    { type: number }
+        residenceTimeMin: { type: number }
+        feedrateKgH:      { type: number }
+        outputBiocharKg:  { type: number }
+        processingDate:   { type: string, format: date }
+        operatorNotes:    { type: string }
+        equipmentId:      { type: string }
+
+    ProductionRecordUpdate:
+      type: object
+      properties:
+        pyrolysisTemp:    { type: number }
+        residenceTimeMin: { type: number }
+        feedrateKgH:      { type: number }
+        outputBiocharKg:  { type: number }
+        processingDate:   { type: string, format: date }
+        operatorNotes:    { type: string }
+        equipmentId:      { type: string }
+
+    # ── LAB CERTIFICATE ───────────────────────────────────────────────────────
+    LabCertificate:
+      type: object
+      required: [id, batchId, labName, hCorgRatio, organicCarbonPercent, ashPercent, status, createdAt]
+      properties:
+        id:                    { type: integer }
+        batchId:               { type: integer }
+        labName:               { type: string }
+        certificateRef:        { type: ["string", "null"] }
+        hCorgRatio:            { type: number }
+        organicCarbonPercent:  { type: number }
+        ashPercent:            { type: number }
+        phValue:               { type: ["number", "null"] }
+        electricalConductivity: { type: ["number", "null"] }
+        sampleDate:            { type: ["string", "null"], format: date }
+        status:
+          type: string
+          enum: [pending, verified, flagged, rejected]
+        ocrExtracted:          { type: boolean }
+        notes:                 { type: ["string", "null"] }
+        createdAt:             { type: string, format: date-time }
+
+    LabCertificateInput:
+      type: object
+      required: [batchId, labName, hCorgRatio, organicCarbonPercent, ashPercent]
+      properties:
+        batchId:               { type: integer }
+        labName:               { type: string }
+        certificateRef:        { type: string }
+        hCorgRatio:            { type: number }
+        organicCarbonPercent:  { type: number }
+        ashPercent:            { type: number }
+        phValue:               { type: number }
+        electricalConductivity: { type: number }
+        sampleDate:            { type: string, format: date }
+        ocrExtracted:          { type: boolean }
+        notes:                 { type: string }
+
+    LabCertificateUpdate:
+      type: object
+      properties:
+        labName:               { type: string }
+        certificateRef:        { type: string }
+        hCorgRatio:            { type: number }
+        organicCarbonPercent:  { type: number }
+        ashPercent:            { type: number }
+        phValue:               { type: number }
+        electricalConductivity: { type: number }
+        sampleDate:            { type: string, format: date }
+        status:                { type: string, enum: [pending, verified, flagged, rejected] }
+        notes:                 { type: string }
+
+    # ── CUSTODY RECORD ────────────────────────────────────────────────────────
+    CustodyRecord:
+      type: object
+      required: [id, batchId, custodyType, party, date, createdAt]
+      properties:
+        id:                { type: integer }
+        batchId:           { type: integer }
+        custodyType:
+          type: string
+          enum: [transport, end_use, storage, transfer]
+        party:             { type: string }
+        date:              { type: string, format: date }
+        destinationSite:   { type: ["string", "null"] }
+        transportMethod:   { type: ["string", "null"] }
+        quantityKg:        { type: ["number", "null"] }
+        evidenceRef:       { type: ["string", "null"] }
+        verified:          { type: boolean }
+        notes:             { type: ["string", "null"] }
+        createdAt:         { type: string, format: date-time }
+
+    CustodyRecordInput:
+      type: object
+      required: [batchId, custodyType, party, date]
+      properties:
+        batchId:           { type: integer }
+        custodyType:       { type: string, enum: [transport, end_use, storage, transfer] }
+        party:             { type: string }
+        date:              { type: string, format: date }
+        destinationSite:   { type: string }
+        transportMethod:   { type: string }
+        quantityKg:        { type: number }
+        evidenceRef:       { type: string }
+        verified:          { type: boolean }
+        notes:             { type: string }
+
+    CustodyRecordUpdate:
+      type: object
+      properties:
+        custodyType:       { type: string, enum: [transport, end_use, storage, transfer] }
+        party:             { type: string }
+        date:              { type: string, format: date }
+        destinationSite:   { type: string }
+        transportMethod:   { type: string }
+        quantityKg:        { type: number }
+        evidenceRef:       { type: string }
+        verified:          { type: boolean }
+        notes:             { type: string }
+
+    # ── MODEL RUN ─────────────────────────────────────────────────────────────
+    ModelRun:
+      type: object
+      required: [id, batchId, registry, biomassCarbonFraction, pyrolysisRetentionFactor, grossCo2e, permanenceDiscount, netCo2e, eligibility, createdAt]
+      properties:
+        id:                        { type: integer }
+        batchId:                   { type: integer }
+        registry:
+          type: string
+          enum: [puro_earth, verra, ebc]
+        biomassCarbonFraction:     { type: number }
+        pyrolysisRetentionFactor:  { type: number }
+        grossCo2e:                 { type: number }
+        permanenceDiscount:        { type: number }
+        netCo2e:                   { type: number }
+        estimatedCreditValue:      { type: ["number", "null"] }
+        eligibility:
+          type: string
+          enum: [eligible, ineligible, conditional]
+        eligibilityNotes:          { type: ["string", "null"] }
+        creditPrice:               { type: ["number", "null"] }
+        createdAt:                 { type: string, format: date-time }
+
+    ModelRunInput:
+      type: object
+      required: [batchId, registry]
+      properties:
+        batchId:    { type: integer }
+        registry:   { type: string, enum: [puro_earth, verra, ebc] }
+        creditPrice: { type: number }
+
+    # ── ASSURANCE ISSUE ───────────────────────────────────────────────────────
+    AssuranceIssue:
+      type: object
+      required: [id, batchId, issueType, severity, status, title, createdAt]
+      properties:
+        id:              { type: integer }
+        batchId:         { type: integer }
+        siteId:          { type: ["integer", "null"] }
+        issueType:
+          type: string
+          enum: [out_of_spec, missing_data, sourcing_gap, custody_gap, methodology, anomaly]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, in_review, resolved, waived]
+        title:           { type: string }
+        description:     { type: ["string", "null"] }
+        assignedTo:      { type: ["string", "null"] }
+        autoSubstituted: { type: boolean }
+        substituteValue: { type: ["string", "null"] }
+        resolvedAt:      { type: ["string", "null"], format: date-time }
+        resolvedBy:      { type: ["string", "null"] }
+        resolution:      { type: ["string", "null"] }
+        createdAt:       { type: string, format: date-time }
+
+    AssuranceIssueInput:
+      type: object
+      required: [batchId, issueType, severity, title]
+      properties:
+        batchId:         { type: integer }
+        siteId:          { type: integer }
+        issueType:       { type: string, enum: [out_of_spec, missing_data, sourcing_gap, custody_gap, methodology, anomaly] }
+        severity:        { type: string, enum: [critical, high, medium, low] }
+        title:           { type: string }
+        description:     { type: string }
+        assignedTo:      { type: string }
+        autoSubstituted: { type: boolean }
+        substituteValue: { type: string }
+
+    AssuranceIssueUpdate:
+      type: object
+      properties:
+        severity:   { type: string, enum: [critical, high, medium, low] }
+        status:     { type: string, enum: [open, in_review, resolved, waived] }
+        assignedTo: { type: string }
+        description: { type: string }
+
+    IssueResolution:
+      type: object
+      required: [resolution, resolvedBy]
+      properties:
+        resolution:  { type: string }
+        resolvedBy:  { type: string }
+
+    # ── AUDIT EVENT ───────────────────────────────────────────────────────────
+    AuditEvent:
+      type: object
+      required: [id, entityType, entityId, action, actor, createdAt]
+      properties:
+        id:          { type: integer }
+        batchId:     { type: ["integer", "null"] }
+        siteId:      { type: ["integer", "null"] }
+        entityType:  { type: string }
+        entityId:    { type: integer }
+        action:      { type: string }
+        actor:       { type: string }
+        description: { type: ["string", "null"] }
+        metadata:    { type: ["string", "null"] }
+        createdAt:   { type: string, format: date-time }
+
+    # ── COMPLIANCE DEADLINE ────────────────────────────────────────────────────
+    ComplianceDeadline:
+      type: object
+      required: [id, siteId, registry, deadlineType, dueDate, status, createdAt]
+      properties:
+        id:            { type: integer }
+        siteId:        { type: integer }
+        batchId:       { type: ["integer", "null"] }
+        registry:      { type: string, enum: [puro_earth, verra, ebc, internal] }
+        deadlineType:
+          type: string
+          enum: [submission, attestation, audit_window, renewal]
+        title:         { type: string }
+        dueDate:       { type: string, format: date }
+        status:
+          type: string
+          enum: [upcoming, due_soon, overdue, completed, waived]
+        assignedTo:    { type: ["string", "null"] }
+        reminderDays:  { type: integer }
+        conflictsWith: { type: ["integer", "null"] }
+        notes:         { type: ["string", "null"] }
+        createdAt:     { type: string, format: date-time }
+
+    ComplianceDeadlineInput:
+      type: object
+      required: [siteId, registry, deadlineType, title, dueDate]
+      properties:
+        siteId:       { type: integer }
+        batchId:      { type: integer }
+        registry:     { type: string, enum: [puro_earth, verra, ebc, internal] }
+        deadlineType: { type: string, enum: [submission, attestation, audit_window, renewal] }
+        title:        { type: string }
+        dueDate:      { type: string, format: date }
+        assignedTo:   { type: string }
+        reminderDays: { type: integer }
+        notes:        { type: string }
+
+    ComplianceDeadlineUpdate:
+      type: object
+      properties:
+        title:        { type: string }
+        dueDate:      { type: string, format: date }
+        status:       { type: string, enum: [upcoming, due_soon, overdue, completed, waived] }
+        assignedTo:   { type: string }
+        reminderDays: { type: integer }
+        notes:        { type: string }
+
+    # ── CREDIT ALLOCATION ─────────────────────────────────────────────────────
+    CreditAllocation:
+      type: object
+      required: [id, batchId, modelRunId, registry, netCo2e, status, createdAt]
+      properties:
+        id:               { type: integer }
+        batchId:          { type: integer }
+        modelRunId:       { type: integer }
+        registry:         { type: string, enum: [puro_earth, verra, ebc] }
+        netCo2e:          { type: number }
+        creditValue:      { type: ["number", "null"] }
+        revenueUsd:       { type: ["number", "null"] }
+        status:
+          type: string
+          enum: [pending, submitted, issued, retired]
+        registryRefId:    { type: ["string", "null"] }
+        exportedAt:       { type: ["string", "null"], format: date-time }
+        createdAt:        { type: string, format: date-time }
+
+    CreditAllocationInput:
+      type: object
+      required: [batchId, modelRunId, registry]
+      properties:
+        batchId:    { type: integer }
+        modelRunId: { type: integer }
+        registry:   { type: string, enum: [puro_earth, verra, ebc] }
+        creditValue: { type: number }
+
+    # ── NOTIFICATION ──────────────────────────────────────────────────────────
+    Notification:
+      type: object
+      required: [id, type, title, read, createdAt]
+      properties:
+        id:        { type: integer }
+        type:
+          type: string
+          enum: [issue_flagged, deadline_approaching, batch_advanced, verification_needed, allocation_complete, system]
+        title:     { type: string }
+        body:      { type: ["string", "null"] }
+        batchId:   { type: ["integer", "null"] }
+        siteId:    { type: ["integer", "null"] }
+        read:      { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # ── DASHBOARD / ANALYTICS ─────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalSites, totalBatches, totalNetCo2e, totalRevenueUsd, openIssues, upcomingDeadlines, siteBreakdown]
+      properties:
+        totalSites:           { type: integer }
+        totalBatches:         { type: integer }
+        activeBatches:        { type: integer }
+        totalNetCo2e:         { type: number }
+        totalRevenueUsd:      { type: number }
+        openIssues:           { type: integer }
+        criticalIssues:       { type: integer }
+        upcomingDeadlines:    { type: integer }
+        overdueDeadlines:     { type: integer }
+        issuedCredits:        { type: number }
+        pendingCredits:       { type: number }
+        siteBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/SitePerformance"
+
+    SitePerformance:
+      type: object
+      required: [siteId, siteName, batchCount, netCo2e, revenueUsd, openIssues, complianceScore]
+      properties:
+        siteId:          { type: integer }
+        siteName:        { type: string }
+        batchCount:      { type: integer }
+        netCo2e:         { type: number }
+        revenueUsd:      { type: number }
+        openIssues:      { type: integer }
+        complianceScore: { type: number }
+
+    PipelineSummary:
+      type: object
+      required: [collect, quantify, assurance, verify, comply, report]
+      properties:
+        collect:   { type: integer }
+        quantify:  { type: integer }
+        assurance: { type: integer }
+        verify:    { type: integer }
+        comply:    { type: integer }
+        report:    { type: integer }
+
+    ActivityItem:
+      type: object
+      required: [id, type, description, actor, timestamp]
+      properties:
+        id:          { type: integer }
+        type:        { type: string }
+        description: { type: string }
+        actor:       { type: string }
+        batchId:     { type: ["integer", "null"] }
+        batchCode:   { type: ["string", "null"] }
+        siteId:      { type: ["integer", "null"] }
+        siteName:    { type: ["string", "null"] }
+        timestamp:   { type: string, format: date-time }
+
+    RegistryComparison:
+      type: object
+      required: [registries, topRecommendation]
+      properties:
+        topRecommendation: { type: string }
+        registries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegistrySummary"
+
+    RegistrySummary:
+      type: object
+      required: [registry, eligibleBatches, totalCo2e, totalRevenue, avgCreditPrice]
+      properties:
+        registry:       { type: string }
+        eligibleBatches: { type: integer }
+        totalCo2e:      { type: number }
+        totalRevenue:   { type: number }
+        avgCreditPrice: { type: number }
+
+    ComplianceHealth:
+      type: object
+      required: [overallScore, upcomingCount, overdueCount, conflictCount, deadlines]
+      properties:
+        overallScore: { type: number }
+        upcomingCount: { type: integer }
+        overdueCount:  { type: integer }
+        conflictCount: { type: integer }
+        deadlines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComplianceDeadline"

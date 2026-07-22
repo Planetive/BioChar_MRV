@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Biochar MRV Platform"
+version = "1.0.0"
+id = "artifacts/mrv-platform"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25644
+
+[services.development]
+run = "pnpm --filter @workspace/mrv-platform run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mrv-platform", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mrv-platform/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25644"
+BASE_PATH = "/"
