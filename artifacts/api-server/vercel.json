@@ -1,7 +1,7 @@
 {
   "framework": null,
   "installCommand": "pnpm install",
-  "buildCommand": "node scripts/vercel-publish.mjs",
+  "buildCommand": "node ../../scripts/vercel-publish.mjs",
   "outputDirectory": "public",
   "rewrites": [
     {
