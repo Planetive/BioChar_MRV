@@ -45,7 +45,10 @@ export default function Sidebar() {
           <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary flex items-center justify-center">
             <Hexagon className="w-4 h-4 text-primary" />
           </div>
-          <span className="font-mono font-bold tracking-tight text-foreground">CARBON<span className="text-primary">MRV</span></span>
+          <div className="flex flex-col leading-tight">
+            <span className="font-mono font-bold tracking-tight text-foreground">CARBON<span className="text-primary">MRV</span></span>
+            <span className="text-[10px] text-muted-foreground font-medium">Powered By Planetive</span>
+          </div>
         </div>
       </div>
 
