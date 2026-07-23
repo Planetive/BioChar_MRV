@@ -3,6 +3,7 @@
   "installCommand": "pnpm install",
   "buildCommand": "node scripts/vercel-publish.mjs",
   "outputDirectory": "public",
+  "ignoreCommand": "exit 1",
   "rewrites": [
     {
       "source": "/((?!assets/).*)",
