@@ -7,6 +7,11 @@ export type PublicUser = {
   createdAt: string;
 };
 
+/** When true (default), auth is local-only — no Supabase/DB required. */
+const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== "false";
+
+const MOCK_USER_KEY = "biochar_mock_user";
+
 function mapUser(user: {
   id: string;
   email?: string | null;
@@ -34,7 +39,36 @@ function configError() {
   };
 }
 
+function readMockUser(): PublicUser | null {
+  try {
+    const raw = localStorage.getItem(MOCK_USER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PublicUser;
+  } catch {
+    return null;
+  }
+}
+
+function writeMockUser(user: PublicUser | null) {
+  if (user) {
+    localStorage.setItem(MOCK_USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(MOCK_USER_KEY);
+  }
+}
+
+function makeMockUser(name: string, email: string): PublicUser {
+  return {
+    id: `mock-${btoa(email).replace(/=+/g, "")}`,
+    name: name.trim() || email.split("@")[0] || "User",
+    email: email.trim().toLowerCase(),
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export async function getSession(): Promise<PublicUser | null> {
+  if (USE_MOCK_AUTH) return readMockUser();
+
   if (!isSupabaseConfigured()) return null;
 
   const { data, error } = await supabase.auth.getUser();
@@ -47,8 +81,6 @@ export async function signUp(input: {
   email: string;
   password: string;
 }): Promise<{ user: PublicUser } | { error: string; needsEmailConfirm?: boolean }> {
-  if (!isSupabaseConfigured()) return configError();
-
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   const password = input.password;
@@ -58,6 +90,14 @@ export async function signUp(input: {
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
+
+  if (USE_MOCK_AUTH) {
+    const user = makeMockUser(name, email);
+    writeMockUser(user);
+    return { user };
+  }
+
+  if (!isSupabaseConfigured()) return configError();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -87,10 +127,23 @@ export async function logIn(input: {
   email: string;
   password: string;
 }): Promise<{ user: PublicUser } | { error: string }> {
-  if (!isSupabaseConfigured()) return configError();
-
   const email = input.email.trim().toLowerCase();
   const password = input.password;
+
+  if (!email) return { error: "Please enter your email." };
+  if (!password) return { error: "Please enter your password." };
+
+  if (USE_MOCK_AUTH) {
+    const existing = readMockUser();
+    const user =
+      existing?.email === email
+        ? existing
+        : makeMockUser(email.split("@")[0] || "User", email);
+    writeMockUser(user);
+    return { user };
+  }
+
+  if (!isSupabaseConfigured()) return configError();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -104,11 +157,20 @@ export async function logIn(input: {
 }
 
 export async function logOut() {
+  if (USE_MOCK_AUTH) {
+    writeMockUser(null);
+    return;
+  }
+
   if (!isSupabaseConfigured()) return;
   await supabase.auth.signOut();
 }
 
 export function onAuthChange(callback: (user: PublicUser | null) => void) {
+  if (USE_MOCK_AUTH) {
+    return { data: { subscription: { unsubscribe() {} } } };
+  }
+
   if (!isSupabaseConfigured()) {
     return { data: { subscription: { unsubscribe() {} } } };
   }
