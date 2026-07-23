@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from "./supabase";
+import { supabase } from "./supabase";
 
 export type PublicUser = {
   id: string;
@@ -69,7 +69,7 @@ function makeMockUser(name: string, email: string): PublicUser {
 export async function getSession(): Promise<PublicUser | null> {
   if (USE_MOCK_AUTH) return readMockUser();
 
-  if (!isSupabaseConfigured()) return null;
+  if (!supabase) return null;
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
@@ -97,7 +97,7 @@ export async function signUp(input: {
     return { user };
   }
 
-  if (!isSupabaseConfigured()) return configError();
+  if (!supabase) return configError();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -143,7 +143,7 @@ export async function logIn(input: {
     return { user };
   }
 
-  if (!isSupabaseConfigured()) return configError();
+  if (!supabase) return configError();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -162,16 +162,12 @@ export async function logOut() {
     return;
   }
 
-  if (!isSupabaseConfigured()) return;
+  if (!supabase) return;
   await supabase.auth.signOut();
 }
 
 export function onAuthChange(callback: (user: PublicUser | null) => void) {
-  if (USE_MOCK_AUTH) {
-    return { data: { subscription: { unsubscribe() {} } } };
-  }
-
-  if (!isSupabaseConfigured()) {
+  if (USE_MOCK_AUTH || !supabase) {
     return { data: { subscription: { unsubscribe() {} } } };
   }
 
