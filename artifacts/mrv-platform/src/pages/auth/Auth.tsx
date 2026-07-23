@@ -40,7 +40,7 @@ function BrandPanel() {
             <Leaf className="h-5 w-5 text-[#b7d4a4]" strokeWidth={1.75} />
           </span>
           <span className="text-xl font-bold tracking-tight text-[#eef3e8]">
-            BioChar
+            Terra
           </span>
         </motion.div>
 
@@ -51,7 +51,7 @@ function BrandPanel() {
             transition={{ duration: 0.7, delay: 0.15 }}
             className="mb-4 text-sm font-medium uppercase tracking-[0.28em] text-[#9bb892]"
           >
-            Carbon MRV Platform
+            Carbon MRV
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -90,7 +90,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
   const title = mode === "login" ? "Welcome back" : "Create your account";
   const subtitle =
     mode === "login"
-      ? "Sign in to continue to your MRV workspace."
+      ? "Sign in to continue to Terra."
       : "Start tracking biochar projects in minutes.";
 
   const handleSubmit = async (e: FormEvent) => {
