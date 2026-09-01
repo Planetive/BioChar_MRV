@@ -1,11 +1,17 @@
 import { supabase } from "./supabase";
 
+export type UserRole = "admin" | "operator";
+
 export type PublicUser = {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
   createdAt: string;
 };
+
+const ADMIN_EMAIL = "admin@planetive.org";
+const ADMIN_PASSWORD = "Admin@123";
 
 /** When true (default), auth is local-only — no Supabase/DB required. */
 const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== "false";
@@ -24,10 +30,14 @@ function mapUser(user: {
       ? metaName.trim()
       : user.email?.split("@")[0] || "User";
 
+  const metaRole = user.user_metadata?.role;
+  const role: UserRole = metaRole === "admin" ? "admin" : "operator";
+
   return {
     id: user.id,
     name,
     email: user.email ?? "",
+    role,
     createdAt: user.created_at ?? new Date().toISOString(),
   };
 }
@@ -39,13 +49,28 @@ function configError() {
   };
 }
 
-function makeMockUser(name: string, email: string): PublicUser {
+function makeMockUser(
+  name: string,
+  email: string,
+  role: UserRole = "operator",
+): PublicUser {
   return {
     id: `mock-${btoa(email).replace(/=+/g, "")}`,
     name: name.trim() || email.split("@")[0] || "User",
     email: email.trim().toLowerCase(),
+    role,
     createdAt: new Date().toISOString(),
   };
+}
+
+function validateAdminCredentials(email: string, password: string) {
+  if (email !== ADMIN_EMAIL) {
+    return { error: "Invalid admin email. Use Admin@planetive.org." };
+  }
+  if (password !== ADMIN_PASSWORD) {
+    return { error: "Invalid admin password." };
+  }
+  return null;
 }
 
 export async function getSession(): Promise<PublicUser | null> {
@@ -70,10 +95,12 @@ export async function signUp(input: {
   name: string;
   email: string;
   password: string;
+  role: UserRole;
 }): Promise<{ user: PublicUser } | { error: string; needsEmailConfirm?: boolean }> {
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   const password = input.password;
+  const role = input.role;
 
   if (!name) return { error: "Please enter your name." };
   if (!email) return { error: "Please enter your email." };
@@ -81,8 +108,13 @@ export async function signUp(input: {
     return { error: "Password must be at least 8 characters." };
   }
 
+  if (role === "admin") {
+    const adminError = validateAdminCredentials(email, password);
+    if (adminError) return adminError;
+  }
+
   if (USE_MOCK_AUTH) {
-    return { user: makeMockUser(name, email) };
+    return { user: makeMockUser(name, email, role) };
   }
 
   if (!supabase) return configError();
@@ -91,7 +123,7 @@ export async function signUp(input: {
     email,
     password,
     options: {
-      data: { name },
+      data: { name, role },
     },
   });
 
@@ -114,15 +146,24 @@ export async function signUp(input: {
 export async function logIn(input: {
   email: string;
   password: string;
+  role: UserRole;
 }): Promise<{ user: PublicUser } | { error: string }> {
   const email = input.email.trim().toLowerCase();
   const password = input.password;
+  const role = input.role;
 
   if (!email) return { error: "Please enter your email." };
   if (!password) return { error: "Please enter your password." };
 
+  if (role === "admin") {
+    const adminError = validateAdminCredentials(email, password);
+    if (adminError) return adminError;
+  }
+
   if (USE_MOCK_AUTH) {
-    return { user: makeMockUser(email.split("@")[0] || "User", email) };
+    const displayName =
+      role === "admin" ? "Admin" : email.split("@")[0] || "User";
+    return { user: makeMockUser(displayName, email, role) };
   }
 
   if (!supabase) return configError();

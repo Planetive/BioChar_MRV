@@ -1,10 +1,12 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Leaf, ArrowRight, Loader2 } from "lucide-react";
-import { logIn, signUp, type PublicUser } from "@/lib/auth-db";
+import { logIn, signUp, type PublicUser, type UserRole } from "@/lib/auth-db";
 import ThemeToggle from "@/components/ThemeToggle";
 
 type Mode = "login" | "signup";
+
+const ADMIN_EMAIL = "Admin@planetive.org";
 
 type AuthProps = {
   onAuthenticated?: (user: PublicUser) => void;
@@ -79,6 +81,7 @@ function BrandPanel() {
 
 function AuthForm({ onAuthenticated }: AuthProps) {
   const [mode, setMode] = useState<Mode>("login");
+  const [role, setRole] = useState<UserRole>("operator");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -86,6 +89,20 @@ function AuthForm({ onAuthenticated }: AuthProps) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleRoleChange = (nextRole: UserRole) => {
+    setRole(nextRole);
+    if (nextRole === "admin") {
+      setEmail(ADMIN_EMAIL);
+      setName("Admin");
+    } else {
+      setEmail("");
+      setName("");
+      setPassword("");
+    }
+    setError(null);
+    setInfo(null);
+  };
 
   const title = mode === "login" ? "Welcome back" : "Create your account";
   const subtitle =
@@ -102,8 +119,8 @@ function AuthForm({ onAuthenticated }: AuthProps) {
     try {
       const result =
         mode === "signup"
-          ? await signUp({ name, email, password })
-          : await logIn({ email, password });
+          ? await signUp({ name, email, password, role })
+          : await logIn({ email, password, role });
 
       if ("error" in result) {
         if ("needsEmailConfirm" in result && result.needsEmailConfirm) {
@@ -127,6 +144,10 @@ function AuthForm({ onAuthenticated }: AuthProps) {
     setMode(next);
     setError(null);
     setInfo(null);
+    if (role === "admin") {
+      setEmail(ADMIN_EMAIL);
+      setName("Admin");
+    }
   };
 
   const fieldsKey = useMemo(() => mode, [mode]);
@@ -196,7 +217,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
               transition={{ duration: 0.28 }}
               className="space-y-4"
             >
-              {mode === "signup" && (
+              {mode === "signup" && role === "operator" && (
                 <Field
                   id="name"
                   label="Full name"
@@ -208,6 +229,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
                   onChange={setName}
                 />
               )}
+              <RoleField role={role} onChange={handleRoleChange} />
               <Field
                 id="email"
                 label="Email"
@@ -217,6 +239,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
                 required
                 value={email}
                 onChange={setEmail}
+                readOnly={role === "admin"}
               />
               <div>
                 <label
@@ -333,6 +356,35 @@ function AuthForm({ onAuthenticated }: AuthProps) {
   );
 }
 
+function RoleField({
+  role,
+  onChange,
+}: {
+  role: UserRole;
+  onChange: (role: UserRole) => void;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor="role"
+        className="mb-1.5 block text-sm font-medium text-[#2c3a2f]"
+      >
+        Role
+      </label>
+      <select
+        id="role"
+        name="role"
+        value={role}
+        onChange={(e) => onChange(e.target.value as UserRole)}
+        className="h-12 w-full rounded-xl border border-[#c9d2c4] bg-white/80 px-4 text-[15px] text-[#152019] outline-none transition focus:border-[#6e9e5c] focus:ring-2 focus:ring-[#6e9e5c]/25"
+      >
+        <option value="operator">Operator</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  );
+}
+
 function Field({
   id,
   label,
@@ -342,6 +394,7 @@ function Field({
   required,
   value,
   onChange,
+  readOnly,
 }: {
   id: string;
   label: string;
@@ -351,6 +404,7 @@ function Field({
   required?: boolean;
   value: string;
   onChange: (value: string) => void;
+  readOnly?: boolean;
 }) {
   return (
     <div>
@@ -369,7 +423,8 @@ function Field({
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-12 w-full rounded-xl border border-[#c9d2c4] bg-white/80 px-4 text-[15px] text-[#152019] outline-none transition focus:border-[#6e9e5c] focus:ring-2 focus:ring-[#6e9e5c]/25"
+        readOnly={readOnly}
+        className={`h-12 w-full rounded-xl border border-[#c9d2c4] bg-white/80 px-4 text-[15px] text-[#152019] outline-none transition focus:border-[#6e9e5c] focus:ring-2 focus:ring-[#6e9e5c]/25${readOnly ? " cursor-not-allowed bg-[#eef1eb] text-[#5f735c]" : ""}`}
       />
     </div>
   );
