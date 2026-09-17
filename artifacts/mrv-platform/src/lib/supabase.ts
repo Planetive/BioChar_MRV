@@ -1,26 +1,49 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-const useMockAuth = import.meta.env.VITE_USE_MOCK_AUTH === "true";
-
-export function isSupabaseConfigured() {
-  return Boolean(url && anonKey);
+function readEnv(name: string): string {
+  const raw = import.meta.env[name];
+  return typeof raw === "string" ? raw.trim() : "";
 }
 
-/** Null when credentials are missing — do not call createClient with empty URL. */
-export const supabase: SupabaseClient | null = isSupabaseConfigured()
-  ? createClient(url!, anonKey!, {
+const url = readEnv("VITE_SUPABASE_URL");
+const anonKey = readEnv("VITE_SUPABASE_ANON_KEY");
+const useMockAuth = readEnv("VITE_USE_MOCK_AUTH") === "true";
+
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function isSupabaseConfigured() {
+  return Boolean(url && anonKey && isValidHttpUrl(url));
+}
+
+function createSupabaseClient(): SupabaseClient | null {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    return createClient(url, anonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
-    })
-  : null;
+    });
+  } catch (error) {
+    console.error("Failed to create Supabase client:", error);
+    return null;
+  }
+}
+
+/** Null when credentials are missing or invalid. */
+export const supabase: SupabaseClient | null = createSupabaseClient();
 
 if (!useMockAuth && !supabase) {
   console.warn(
-    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Add them to artifacts/mrv-platform/.env",
+    "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (Config, not Secret) on Vercel and redeploy.",
   );
 }
