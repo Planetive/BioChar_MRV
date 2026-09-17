@@ -121,9 +121,13 @@ export async function signUp(input: {
   const password = input.password;
   const role = input.role;
 
-  if (role === "operator" && !name) {
-    return { error: "Please enter your name." };
+  if (role === "admin") {
+    return {
+      error: "Admin accounts cannot be created from Sign up. Please log in instead.",
+    };
   }
+
+  if (!name) return { error: "Please enter your name." };
   if (!email) return { error: "Please enter your email." };
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
@@ -132,7 +136,7 @@ export async function signUp(input: {
   const accessError = assertRoleAccess(role, email);
   if (accessError) return accessError;
 
-  const displayName = role === "admin" ? "Admin" : name;
+  const displayName = name;
 
   if (USE_MOCK_AUTH) {
     return { user: makeMockUser(displayName, email, role) };

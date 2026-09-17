@@ -149,7 +149,14 @@ function AuthForm({ onAuthenticated }: AuthProps) {
     setMode(next);
     setError(null);
     setInfo(null);
-    if (role === "admin") {
+    if (next === "signup") {
+      setRole("operator");
+      if (role === "admin") {
+        setEmail("");
+        setName("");
+        setPassword("");
+      }
+    } else if (role === "admin") {
       setEmail(ADMIN_EMAIL_DISPLAY);
       setName("Admin");
     }
@@ -227,14 +234,18 @@ function AuthForm({ onAuthenticated }: AuthProps) {
                   id="name"
                   label="Full name"
                   type="text"
-                  placeholder="Alex Rivera"
+                  placeholder="Ahmed Khan"
                   autoComplete="name"
                   required
                   value={name}
                   onChange={setName}
                 />
               )}
-              <RoleField role={role} onChange={handleRoleChange} />
+              <RoleField
+                role={role}
+                onChange={handleRoleChange}
+                allowAdmin={mode === "login"}
+              />
               <Field
                 id="email"
                 label="Email"
@@ -364,9 +375,11 @@ function AuthForm({ onAuthenticated }: AuthProps) {
 function RoleField({
   role,
   onChange,
+  allowAdmin,
 }: {
   role: UserRole;
   onChange: (role: UserRole) => void;
+  allowAdmin: boolean;
 }) {
   return (
     <div>
@@ -379,12 +392,12 @@ function RoleField({
       <select
         id="role"
         name="role"
-        value={role}
+        value={allowAdmin ? role : "operator"}
         onChange={(e) => onChange(e.target.value as UserRole)}
         className="h-12 w-full rounded-xl border border-[#c9d2c4] bg-white/80 px-4 text-[15px] text-[#152019] outline-none transition focus:border-[#6e9e5c] focus:ring-2 focus:ring-[#6e9e5c]/25"
       >
         <option value="operator">Operator</option>
-        <option value="admin">Admin</option>
+        {allowAdmin && <option value="admin">Admin</option>}
       </select>
     </div>
   );
