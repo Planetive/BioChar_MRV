@@ -121,7 +121,9 @@ export default function Sidebar() {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-foreground truncate">{user?.name || "User"}</span>
-            <span className="text-[10px] font-mono text-primary truncate">{user?.email}</span>
+            <span className="text-[10px] font-mono text-primary truncate">
+              {user?.role === "admin" ? "Admin" : "Operator"} · {user?.email}
+            </span>
           </div>
         </div>
         <button

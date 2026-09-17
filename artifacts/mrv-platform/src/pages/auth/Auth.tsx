@@ -1,12 +1,17 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Leaf, ArrowRight, Loader2 } from "lucide-react";
-import { logIn, signUp, type PublicUser, type UserRole } from "@/lib/auth-db";
+import {
+  logIn,
+  signUp,
+  type PublicUser,
+  type UserRole,
+} from "@/lib/auth-db";
 import ThemeToggle from "@/components/ThemeToggle";
 
 type Mode = "login" | "signup";
 
-const ADMIN_EMAIL = "Admin@planetive.org";
+const ADMIN_EMAIL_DISPLAY = "Admin@planetive.org";
 
 type AuthProps = {
   onAuthenticated?: (user: PublicUser) => void;
@@ -93,7 +98,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
   const handleRoleChange = (nextRole: UserRole) => {
     setRole(nextRole);
     if (nextRole === "admin") {
-      setEmail(ADMIN_EMAIL);
+      setEmail(ADMIN_EMAIL_DISPLAY);
       setName("Admin");
     } else {
       setEmail("");
@@ -145,7 +150,7 @@ function AuthForm({ onAuthenticated }: AuthProps) {
     setError(null);
     setInfo(null);
     if (role === "admin") {
-      setEmail(ADMIN_EMAIL);
+      setEmail(ADMIN_EMAIL_DISPLAY);
       setName("Admin");
     }
   };

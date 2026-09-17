@@ -10,11 +10,10 @@ export type PublicUser = {
   createdAt: string;
 };
 
-const ADMIN_EMAIL = "admin@planetive.org";
-const ADMIN_PASSWORD = "Admin@123";
+export const ADMIN_EMAIL = "admin@planetive.org";
 
-/** When true (default), auth is local-only — no Supabase/DB required. */
-const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== "false";
+/** Mock auth only when explicitly enabled. Real Supabase is the default when configured. */
+const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === "true";
 
 const LEGACY_MOCK_USER_KEY = "biochar_mock_user";
 
@@ -24,19 +23,21 @@ function mapUser(user: {
   created_at?: string;
   user_metadata?: Record<string, unknown>;
 }): PublicUser {
+  const email = (user.email ?? "").toLowerCase();
   const metaName = user.user_metadata?.name;
   const name =
     typeof metaName === "string" && metaName.trim()
       ? metaName.trim()
-      : user.email?.split("@")[0] || "User";
+      : email.split("@")[0] || "User";
 
   const metaRole = user.user_metadata?.role;
-  const role: UserRole = metaRole === "admin" ? "admin" : "operator";
+  const role: UserRole =
+    metaRole === "admin" || email === ADMIN_EMAIL ? "admin" : "operator";
 
   return {
     id: user.id,
     name,
-    email: user.email ?? "",
+    email,
     role,
     createdAt: user.created_at ?? new Date().toISOString(),
   };
@@ -63,19 +64,37 @@ function makeMockUser(
   };
 }
 
-function validateAdminCredentials(email: string, password: string) {
-  if (email !== ADMIN_EMAIL) {
-    return { error: "Invalid admin email. Use Admin@planetive.org." };
+function assertRoleAccess(
+  selectedRole: UserRole,
+  email: string,
+): { error: string } | null {
+  const normalized = email.trim().toLowerCase();
+  if (selectedRole === "admin" && normalized !== ADMIN_EMAIL) {
+    return { error: "Admin access is limited to Admin@planetive.org." };
   }
-  if (password !== ADMIN_PASSWORD) {
-    return { error: "Invalid admin password." };
+  if (selectedRole === "operator" && normalized === ADMIN_EMAIL) {
+    return { error: "Use the Admin role to sign in with this account." };
+  }
+  return null;
+}
+
+function assertUserMatchesRole(
+  user: PublicUser,
+  selectedRole: UserRole,
+): { error: string } | null {
+  if (user.role !== selectedRole) {
+    return {
+      error:
+        selectedRole === "admin"
+          ? "This account is not an admin."
+          : "This account is registered as Admin. Switch role to Admin.",
+    };
   }
   return null;
 }
 
 export async function getSession(): Promise<PublicUser | null> {
   if (USE_MOCK_AUTH) {
-    // Never restore a session — always show login on fresh visit / refresh.
     try {
       localStorage.removeItem(LEGACY_MOCK_USER_KEY);
     } catch {
@@ -102,19 +121,21 @@ export async function signUp(input: {
   const password = input.password;
   const role = input.role;
 
-  if (!name) return { error: "Please enter your name." };
+  if (role === "operator" && !name) {
+    return { error: "Please enter your name." };
+  }
   if (!email) return { error: "Please enter your email." };
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
 
-  if (role === "admin") {
-    const adminError = validateAdminCredentials(email, password);
-    if (adminError) return adminError;
-  }
+  const accessError = assertRoleAccess(role, email);
+  if (accessError) return accessError;
+
+  const displayName = role === "admin" ? "Admin" : name;
 
   if (USE_MOCK_AUTH) {
-    return { user: makeMockUser(name, email, role) };
+    return { user: makeMockUser(displayName, email, role) };
   }
 
   if (!supabase) return configError();
@@ -123,7 +144,7 @@ export async function signUp(input: {
     email,
     password,
     options: {
-      data: { name, role },
+      data: { name: displayName, role },
     },
   });
 
@@ -133,6 +154,12 @@ export async function signUp(input: {
     return { error: "Could not create account. Please try again." };
   }
 
+  // Supabase can return a user with empty identities when the email already exists
+  // and email confirmation / duplicate protection is on.
+  if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return { error: "An account with this email already exists. Please log in." };
+  }
+
   if (!data.session) {
     return {
       error: "Account created. Check your email to confirm, then log in.",
@@ -140,7 +167,14 @@ export async function signUp(input: {
     };
   }
 
-  return { user: mapUser(data.user) };
+  const user = mapUser(data.user);
+  const roleError = assertUserMatchesRole(user, role);
+  if (roleError) {
+    await supabase.auth.signOut();
+    return roleError;
+  }
+
+  return { user };
 }
 
 export async function logIn(input: {
@@ -155,10 +189,8 @@ export async function logIn(input: {
   if (!email) return { error: "Please enter your email." };
   if (!password) return { error: "Please enter your password." };
 
-  if (role === "admin") {
-    const adminError = validateAdminCredentials(email, password);
-    if (adminError) return adminError;
-  }
+  const accessError = assertRoleAccess(role, email);
+  if (accessError) return accessError;
 
   if (USE_MOCK_AUTH) {
     const displayName =
@@ -173,10 +205,40 @@ export async function logIn(input: {
     password,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("email not confirmed")) {
+      return {
+        error: "Please confirm your email before logging in. Check your inbox.",
+      };
+    }
+    if (message.includes("invalid login")) {
+      return { error: "Invalid email or password." };
+    }
+    return { error: error.message };
+  }
+
   if (!data.user) return { error: "Login failed. Please try again." };
 
-  return { user: mapUser(data.user) };
+  let user = mapUser(data.user);
+
+  // Backfill role/name metadata for accounts created before roles existed
+  if (data.user.user_metadata?.role !== user.role) {
+    const { data: updated, error: updateError } = await supabase.auth.updateUser({
+      data: { name: user.name, role: user.role },
+    });
+    if (!updateError && updated.user) {
+      user = mapUser(updated.user);
+    }
+  }
+
+  const roleError = assertUserMatchesRole(user, role);
+  if (roleError) {
+    await supabase.auth.signOut();
+    return roleError;
+  }
+
+  return { user };
 }
 
 export async function logOut() {
